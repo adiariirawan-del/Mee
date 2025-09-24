@@ -1,1 +1,491 @@
 
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buku Digital - Animasi Lembaran Buku</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Georgia', serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #8b7355 0%, #6b4e31 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 30px;
+            color: white;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .book-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            perspective: 2000px;
+            margin: 0 auto 30px;
+        }
+
+        .book {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        .page {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background: #f5f5dc;
+            border: 1px solid #8b4513;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            backface-visibility: hidden;
+            transform-origin: left center;
+            transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+            border-radius: 5px 10px 10px 5px;
+        }
+
+        .page-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .page-number {
+            position: absolute;
+            bottom: 15px;
+            right: 20px;
+            color: #8b4513;
+            font-size: 0.9rem;
+        }
+
+        .cover {
+            background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%);
+            color: #f5f5dc;
+            z-index: 10;
+        }
+
+        .cover h2 {
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+        }
+
+        .cover p {
+            font-size: 1.1rem;
+            max-width: 400px;
+            margin-bottom: 30px;
+        }
+
+        .cover .icon {
+            font-size: 4rem;
+            margin-bottom: 30px;
+        }
+
+        .content-page {
+            background: #fefefe;
+            z-index: 9;
+        }
+
+        .content-page h3 {
+            font-size: 1.8rem;
+            color: #8b4513;
+            margin-bottom: 20px;
+        }
+
+        .content-page p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            max-width: 600px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .flipped {
+            transform: rotateY(-180deg);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #8b4513;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            background: #a0522d;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .page-indicator {
+            margin-top: 15px;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        /* Animasi khusus untuk halaman yang dibalik */
+        @keyframes pageTurn {
+            0% {
+                transform: rotateY(0deg);
+                z-index: 1;
+            }
+            50% {
+                transform: rotateY(-90deg);
+                z-index: 2;
+            }
+            100% {
+                transform: rotateY(-180deg);
+                z-index: 1;
+            }
+        }
+
+        .turning {
+            animation: pageTurn 0.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+        }
+
+        /* Efek kertas pada halaman */
+        .page::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, transparent 95%, rgba(0,0,0,0.03) 100%);
+            pointer-events: none;
+        }
+
+        /* Efek bayangan saat halaman terbuka */
+        .book::before {
+            content: "";
+            position: absolute;
+            top: 5%;
+            left: 0;
+            width: 100%;
+            height: 90%;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            filter: blur(10px);
+            z-index: -1;
+            transform: translateZ(-20px);
+        }
+
+        @media (max-width: 768px) {
+            .book-container {
+                height: 400px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+                flex-direction: column;
+            }
+            
+            .page {
+                padding: 20px;
+            }
+            
+            .cover h2 {
+                font-size: 1.8rem;
+            }
+            
+            .content-page h3 {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .book-container {
+                height: 350px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-book"></i> Buku Digital <i class="fas fa-book"></i></h1>
+            <p>Baca dengan pengalaman membalik halaman seperti buku nyata</p>
+        </div>
+
+        <div class="book-container">
+            <div class="book" id="book">
+                <!-- Halaman Sampul -->
+                <div class="page cover" id="page-1">
+                    <div class="page-content">
+                        <div class="icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <h2>Petualangan di Dunia Coding</h2>
+                        <p>Sebuah perjalanan menarik ke dunia pemrograman dan teknologi</p>
+                        <p><strong>By: Digital Library</strong></p>
+                    </div>
+                    <div class="page-number">1</div>
+                </div>
+                
+                <!-- Halaman 2 -->
+                <div class="page content-page" id="page-2">
+                    <div class="page-content">
+                        <h3>Bab 1: Memulai Perjalanan</h3>
+                        <p>Setiap perjalanan besar dimulai dengan langkah kecil. Dalam dunia coding, langkah pertama adalah memahami dasar-dasar pemrograman.</p>
+                        <p>Pemrograman adalah seni memberi instruksi kepada komputer untuk menyelesaikan tugas tertentu. Bahasa pemrograman adalah alat yang kita gunakan untuk berkomunikasi dengan mesin.</p>
+                    </div>
+                    <div class="page-number">2</div>
+                </div>
+                
+                <!-- Halaman 3 -->
+                <div class="page content-page" id="page-3">
+                    <div class="page-content">
+                        <h3>Mengenal HTML & CSS</h3>
+                        <p>HTML (HyperText Markup Language) adalah tulang punggung web. Ini digunakan untuk membuat struktur dasar halaman web.</p>
+                        <p>CSS (Cascading Style Sheets) adalah bahasa yang digunakan untuk memperindah tampilan halaman web. Dengan CSS, kita dapat mengatur warna, tata letak, font, dan banyak aspek visual lainnya.</p>
+                    </div>
+                    <div class="page-number">3</div>
+                </div>
+                
+                <!-- Halaman 4 -->
+                <div class="page content-page" id="page-4">
+                    <div class="page-content">
+                        <h3>JavaScript: Bahasa Web Interaktif</h3>
+                        <p>JavaScript adalah bahasa pemrograman yang membuat web menjadi dinamis dan interaktif. Dengan JavaScript, kita dapat menambahkan fungsionalitas seperti animasi, form validation, dan interaksi pengguna.</p>
+                        <p>JavaScript dapat berjalan di browser maupun di server (dengan Node.js), menjadikannya salah satu bahasa paling serbaguna.</p>
+                    </div>
+                    <div class="page-number">4</div>
+                </div>
+                
+                <!-- Halaman 5 -->
+                <div class="page content-page" id="page-5">
+                    <div class="page-content">
+                        <h3>Tips Belajar Pemrograman</h3>
+                        <p>1. Mulai dengan proyek kecil dan sederhana</p>
+                        <p>2. Praktek secara konsisten setiap hari</p>
+                        <p>3. Jangan takut membuat kesalahan - itu bagian dari proses belajar</p>
+                        <p>4. Bergabung dengan komunitas programmer</p>
+                        <p>5. Baca dokumentasi dan sumber belajar terpercaya</p>
+                    </div>
+                    <div class="page-number">5</div>
+                </div>
+                
+                <!-- Halaman Sampul Belakang -->
+                <div class="page cover" id="page-6">
+                    <div class="page-content">
+                        <div class="icon">
+                            <i class="fas fa-flag-checkered"></i>
+                        </div>
+                        <h2>Sampul Belakang</h2>
+                        <p>Terima kasih telah membaca buku digital ini!</p>
+                        <p><strong>Digital Library © 2023</strong></p>
+                    </div>
+                    <div class="page-number">6</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="prev-btn" disabled>
+                <i class="fas fa-arrow-left"></i> Halaman Sebelumnya
+            </button>
+            <button class="btn" id="next-btn">
+                Halaman Selanjutnya <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <div class="page-indicator">
+            Halaman <span id="current-page">1</span> dari <span id="total-pages">6</span>
+        </div>
+    </div>
+
+    <script>
+        // Elemen DOM
+        const book = document.getElementById('book');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const currentPageEl = document.getElementById('current-page');
+        const totalPagesEl = document.getElementById('total-pages');
+        
+        // Variabel state
+        let currentPage = 1;
+        const totalPages = 6;
+        let isTurning = false;
+        
+        // Inisialisasi
+        totalPagesEl.textContent = totalPages;
+        updateButtons();
+        
+        // Event listeners
+        prevBtn.addEventListener('click', goToPreviousPage);
+        nextBtn.addEventListener('click', goToNextPage);
+        
+        // Fungsi untuk pergi ke halaman sebelumnya
+        function goToPreviousPage() {
+            if (currentPage <= 1 || isTurning) return;
+            
+            isTurning = true;
+            currentPage--;
+            
+            // Animasikan pembalikan halaman
+            animatePageTurn(false);
+            
+            // Update UI
+            updateCurrentPage();
+            updateButtons();
+        }
+        
+        // Fungsi untuk pergi ke halaman berikutnya
+        function goToNextPage() {
+            if (currentPage >= totalPages || isTurning) return;
+            
+            isTurning = true;
+            currentPage++;
+            
+            // Animasikan pembalikan halaman
+            animatePageTurn(true);
+            
+            // Update UI
+            updateCurrentPage();
+            updateButtons();
+        }
+        
+        // Fungsi untuk animasi membalik halaman
+        function animatePageTurn(isNext) {
+            const book = document.getElementById('book');
+            
+            // Tambahkan kelas animasi
+            book.classList.add('turning');
+            
+            // Atur transformasi berdasarkan arah
+            if (isNext) {
+                book.style.transform = `rotateY(${-currentPage * 30}deg)`;
+            } else {
+                book.style.transform = `rotateY(${-(currentPage - 1) * 30}deg)`;
+            }
+            
+            // Hapus kelas animasi setelah selesai
+            setTimeout(() => {
+                book.classList.remove('turning');
+                isTurning = false;
+            }, 800);
+        }
+        
+        // Fungsi untuk memperbarui tampilan halaman saat ini
+        function updateCurrentPage() {
+            currentPageEl.textContent = currentPage;
+        }
+        
+        // Fungsi untuk memperbarui status tombol
+        function updateButtons() {
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+        }
+        
+        // Tambahkan navigasi dengan keyboard
+        document.addEventListener('keydown', (e) => {
+            if (isTurning) return;
+            
+            if (e.key === 'ArrowLeft') {
+                goToPreviousPage();
+            } else if (e.key === 'ArrowRight') {
+                goToNextPage();
+            }
+        });
+        
+        // Tambahkan dukungan untuk sentuhan (swipe) pada perangkat mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        book.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        
+        book.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+        
+        function handleSwipe() {
+            if (isTurning) return;
+            
+            const swipeThreshold = 50;
+            
+            if (touchEndX < touchStartX - swipeThreshold) {
+                // Swipe kiri - next page
+                goToNextPage();
+            } else if (touchEndX > touchStartX + swipeThreshold) {
+                // Swipe kanan - previous page
+                goToPreviousPage();
+            }
+        }
+    </script>
+</body>
+</html>
