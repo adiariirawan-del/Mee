@@ -1,11 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buku Digital - Animasi Lembaran Buku</title>
+    <title>Buku Digital - Baca PDF dengan Animasi</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -25,7 +25,7 @@
 
         .container {
             width: 100%;
-            max-width: 900px;
+            max-width: 1000px;
             text-align: center;
         }
 
@@ -44,12 +44,49 @@
             gap: 15px;
         }
 
+        .upload-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .upload-area {
+            border: 3px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .upload-area:hover {
+            border-color: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-area i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.8;
+        }
+
+        .upload-area h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
         .book-container {
             position: relative;
             width: 100%;
             height: 500px;
             perspective: 2000px;
             margin: 0 auto 30px;
+            display: none;
         }
 
         .book {
@@ -73,11 +110,12 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 40px;
+            padding: 20px;
             backface-visibility: hidden;
             transform-origin: left center;
             transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1);
             border-radius: 5px 10px 10px 5px;
+            overflow: hidden;
         }
 
         .page-content {
@@ -88,14 +126,24 @@
             justify-content: center;
             align-items: center;
             text-align: center;
+            background: white;
+        }
+
+        .pdf-page {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
         .page-number {
             position: absolute;
-            bottom: 15px;
-            right: 20px;
+            bottom: 10px;
+            right: 15px;
             color: #8b4513;
             font-size: 0.9rem;
+            background: rgba(245, 245, 220, 0.8);
+            padding: 2px 8px;
+            border-radius: 10px;
         }
 
         .cover {
@@ -124,20 +172,6 @@
         .content-page {
             background: #fefefe;
             z-index: 9;
-        }
-
-        .content-page h3 {
-            font-size: 1.8rem;
-            color: #8b4513;
-            margin-bottom: 20px;
-        }
-
-        .content-page p {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            max-width: 600px;
-            margin-bottom: 20px;
-            text-align: left;
         }
 
         .flipped {
@@ -184,6 +218,14 @@
             margin-top: 15px;
             color: white;
             font-size: 1.1rem;
+        }
+
+        .file-info {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: white;
         }
 
         /* Animasi khusus untuk halaman yang dibalik */
@@ -233,6 +275,10 @@
             transform: translateZ(-20px);
         }
 
+        #file-input {
+            display: none;
+        }
+
         @media (max-width: 768px) {
             .book-container {
                 height: 400px;
@@ -244,15 +290,11 @@
             }
             
             .page {
-                padding: 20px;
+                padding: 15px;
             }
             
             .cover h2 {
                 font-size: 1.8rem;
-            }
-            
-            .content-page h3 {
-                font-size: 1.5rem;
             }
         }
 
@@ -276,10 +318,25 @@
     <div class="container">
         <div class="header">
             <h1><i class="fas fa-book"></i> Buku Digital <i class="fas fa-book"></i></h1>
-            <p>Baca dengan pengalaman membalik halaman seperti buku nyata</p>
+            <p>Unggah PDF Anda dan baca dengan pengalaman membalik halaman seperti buku nyata</p>
         </div>
 
-        <div class="book-container">
+        <div class="upload-section">
+            <div class="upload-area" id="upload-area">
+                <i class="fas fa-file-pdf"></i>
+                <h3>Unggah PDF Anda</h3>
+                <p>Klik di sini atau seret file PDF ke area ini</p>
+                <p class="file-info" id="file-info">Belum ada file yang dipilih</p>
+            </div>
+            
+            <input type="file" id="file-input" accept=".pdf">
+            
+            <button class="btn" id="upload-btn">
+                <i class="fas fa-upload"></i> Pilih File PDF
+            </button>
+        </div>
+
+        <div class="book-container" id="book-container">
             <div class="book" id="book">
                 <!-- Halaman Sampul -->
                 <div class="page cover" id="page-1">
@@ -287,72 +344,17 @@
                         <div class="icon">
                             <i class="fas fa-book-open"></i>
                         </div>
-                        <h2>Petualangan di Dunia Coding</h2>
-                        <p>Sebuah perjalanan menarik ke dunia pemrograman dan teknologi</p>
-                        <p><strong>By: Digital Library</strong></p>
+                        <h2 id="pdf-title">Judul PDF</h2>
+                        <p id="pdf-description">Deskripsi PDF akan muncul di sini</p>
                     </div>
                     <div class="page-number">1</div>
                 </div>
                 
-                <!-- Halaman 2 -->
-                <div class="page content-page" id="page-2">
-                    <div class="page-content">
-                        <h3>Bab 1: Memulai Perjalanan</h3>
-                        <p>Setiap perjalanan besar dimulai dengan langkah kecil. Dalam dunia coding, langkah pertama adalah memahami dasar-dasar pemrograman.</p>
-                        <p>Pemrograman adalah seni memberi instruksi kepada komputer untuk menyelesaikan tugas tertentu. Bahasa pemrograman adalah alat yang kita gunakan untuk berkomunikasi dengan mesin.</p>
-                    </div>
-                    <div class="page-number">2</div>
-                </div>
-                
-                <!-- Halaman 3 -->
-                <div class="page content-page" id="page-3">
-                    <div class="page-content">
-                        <h3>Mengenal HTML & CSS</h3>
-                        <p>HTML (HyperText Markup Language) adalah tulang punggung web. Ini digunakan untuk membuat struktur dasar halaman web.</p>
-                        <p>CSS (Cascading Style Sheets) adalah bahasa yang digunakan untuk memperindah tampilan halaman web. Dengan CSS, kita dapat mengatur warna, tata letak, font, dan banyak aspek visual lainnya.</p>
-                    </div>
-                    <div class="page-number">3</div>
-                </div>
-                
-                <!-- Halaman 4 -->
-                <div class="page content-page" id="page-4">
-                    <div class="page-content">
-                        <h3>JavaScript: Bahasa Web Interaktif</h3>
-                        <p>JavaScript adalah bahasa pemrograman yang membuat web menjadi dinamis dan interaktif. Dengan JavaScript, kita dapat menambahkan fungsionalitas seperti animasi, form validation, dan interaksi pengguna.</p>
-                        <p>JavaScript dapat berjalan di browser maupun di server (dengan Node.js), menjadikannya salah satu bahasa paling serbaguna.</p>
-                    </div>
-                    <div class="page-number">4</div>
-                </div>
-                
-                <!-- Halaman 5 -->
-                <div class="page content-page" id="page-5">
-                    <div class="page-content">
-                        <h3>Tips Belajar Pemrograman</h3>
-                        <p>1. Mulai dengan proyek kecil dan sederhana</p>
-                        <p>2. Praktek secara konsisten setiap hari</p>
-                        <p>3. Jangan takut membuat kesalahan - itu bagian dari proses belajar</p>
-                        <p>4. Bergabung dengan komunitas programmer</p>
-                        <p>5. Baca dokumentasi dan sumber belajar terpercaya</p>
-                    </div>
-                    <div class="page-number">5</div>
-                </div>
-                
-                <!-- Halaman Sampul Belakang -->
-                <div class="page cover" id="page-6">
-                    <div class="page-content">
-                        <div class="icon">
-                            <i class="fas fa-flag-checkered"></i>
-                        </div>
-                        <h2>Sampul Belakang</h2>
-                        <p>Terima kasih telah membaca buku digital ini!</p>
-                        <p><strong>Digital Library © 2023</strong></p>
-                    </div>
-                    <div class="page-number">6</div>
-                </div>
+                <!-- Halaman PDF akan ditambahkan di sini -->
             </div>
         </div>
 
-        <div class="controls">
+        <div class="controls" id="controls" style="display: none;">
             <button class="btn" id="prev-btn" disabled>
                 <i class="fas fa-arrow-left"></i> Halaman Sebelumnya
             </button>
@@ -361,32 +363,191 @@
             </button>
         </div>
 
-        <div class="page-indicator">
-            Halaman <span id="current-page">1</span> dari <span id="total-pages">6</span>
+        <div class="page-indicator" id="page-indicator" style="display: none;">
+            Halaman <span id="current-page">1</span> dari <span id="total-pages">0</span>
         </div>
     </div>
 
     <script>
+        // Konfigurasi PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
         // Elemen DOM
+        const fileInput = document.getElementById('file-input');
+        const uploadArea = document.getElementById('upload-area');
+        const uploadBtn = document.getElementById('upload-btn');
+        const fileInfo = document.getElementById('file-info');
+        const bookContainer = document.getElementById('book-container');
         const book = document.getElementById('book');
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
         const currentPageEl = document.getElementById('current-page');
         const totalPagesEl = document.getElementById('total-pages');
-        
+        const pageIndicator = document.getElementById('page-indicator');
+        const controls = document.getElementById('controls');
+        const pdfTitle = document.getElementById('pdf-title');
+        const pdfDescription = document.getElementById('pdf-description');
+
         // Variabel state
         let currentPage = 1;
-        const totalPages = 6;
+        let totalPages = 0;
         let isTurning = false;
-        
-        // Inisialisasi
-        totalPagesEl.textContent = totalPages;
-        updateButtons();
-        
+        let pdfDoc = null;
+        let pdfName = '';
+
         // Event listeners
+        uploadBtn.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.8)';
+            uploadArea.style.background = 'rgba(255, 255, 255, 0.15)';
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+            uploadArea.style.background = 'transparent';
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+            uploadArea.style.background = 'transparent';
+            
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+
+        fileInput.addEventListener('change', handleFileSelect);
+        
         prevBtn.addEventListener('click', goToPreviousPage);
         nextBtn.addEventListener('click', goToNextPage);
         
+        // Fungsi untuk menangani pemilihan file
+        function handleFileSelect() {
+            if (fileInput.files.length === 0) return;
+            
+            const file = fileInput.files[0];
+            if (file.type !== 'application/pdf') {
+                alert('Silakan pilih file PDF yang valid.');
+                return;
+            }
+            
+            pdfName = file.name;
+            fileInfo.textContent = `File: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+            
+            const fileReader = new FileReader();
+            
+            fileReader.onload = function() {
+                const typedarray = new Uint8Array(this.result);
+                loadPdf(typedarray);
+            };
+            
+            fileReader.readAsArrayBuffer(file);
+        }
+
+        // Fungsi untuk memuat PDF
+        function loadPdf(data) {
+            pdfjsLib.getDocument(data).promise.then(pdf => {
+                pdfDoc = pdf;
+                totalPages = pdf.numPages;
+                
+                // Update UI
+                pdfTitle.textContent = pdfName.replace('.pdf', '');
+                pdfDescription.textContent = `PDF dengan ${totalPages} halaman`;
+                totalPagesEl.textContent = totalPages + 1; // +1 untuk halaman sampul
+                
+                // Sembunyikan area unggah, tampilkan buku dan kontrol
+                document.querySelector('.upload-section').style.display = 'none';
+                bookContainer.style.display = 'block';
+                controls.style.display = 'flex';
+                pageIndicator.style.display = 'block';
+                
+                // Render halaman pertama
+                renderPage(1);
+            }).catch(error => {
+                console.error('Error loading PDF:', error);
+                alert('Terjadi kesalahan saat memuat PDF. Pastikan file tidak rusak.');
+            });
+        }
+
+        // Fungsi untuk merender halaman PDF
+        function renderPage(pageNum) {
+            if (!pdfDoc) return;
+            
+            // Halaman 1 adalah sampul, jadi untuk halaman konten kita kurangi 1
+            const pdfPageNum = pageNum - 1;
+            
+            if (pdfPageNum < 1) {
+                // Tampilkan sampul
+                document.getElementById('page-1').style.display = 'flex';
+                return;
+            }
+            
+            if (pdfPageNum > totalPages) return;
+            
+            // Sembunyikan sampul jika kita di halaman > 1
+            if (pageNum > 1) {
+                document.getElementById('page-1').style.display = 'none';
+            }
+            
+            // Cek apakah halaman sudah ada
+            let pageElement = document.getElementById(`pdf-page-${pageNum}`);
+            
+            if (!pageElement) {
+                // Buat elemen halaman baru
+                pageElement = document.createElement('div');
+                pageElement.className = 'page content-page';
+                pageElement.id = `pdf-page-${pageNum}`;
+                
+                const pageContent = document.createElement('div');
+                pageContent.className = 'page-content';
+                
+                const canvas = document.createElement('canvas');
+                canvas.className = 'pdf-page';
+                
+                const pageNumber = document.createElement('div');
+                pageNumber.className = 'page-number';
+                pageNumber.textContent = pageNum;
+                
+                pageContent.appendChild(canvas);
+                pageElement.appendChild(pageContent);
+                pageElement.appendChild(pageNumber);
+                
+                // Tambahkan halaman ke buku
+                book.appendChild(pageElement);
+                
+                // Render konten PDF
+                pdfDoc.getPage(pdfPageNum).then(page => {
+                    const viewport = page.getViewport({ scale: 1.5 });
+                    const canvasContext = canvas.getContext('2d');
+                    
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    
+                    const renderContext = {
+                        canvasContext: canvasContext,
+                        viewport: viewport
+                    };
+                    
+                    page.render(renderContext);
+                });
+            } else {
+                // Tampilkan halaman yang sudah ada
+                pageElement.style.display = 'flex';
+            }
+            
+            // Sembunyikan semua halaman lainnya
+            document.querySelectorAll('.page').forEach(page => {
+                if (page.id !== `pdf-page-${pageNum}` && page.id !== 'page-1') {
+                    page.style.display = 'none';
+                }
+            });
+        }
+
         // Fungsi untuk pergi ke halaman sebelumnya
         function goToPreviousPage() {
             if (currentPage <= 1 || isTurning) return;
@@ -397,6 +558,9 @@
             // Animasikan pembalikan halaman
             animatePageTurn(false);
             
+            // Render halaman
+            renderPage(currentPage);
+            
             // Update UI
             updateCurrentPage();
             updateButtons();
@@ -404,13 +568,16 @@
         
         // Fungsi untuk pergi ke halaman berikutnya
         function goToNextPage() {
-            if (currentPage >= totalPages || isTurning) return;
+            if (currentPage >= totalPages + 1 || isTurning) return; // +1 untuk halaman sampul
             
             isTurning = true;
             currentPage++;
             
             // Animasikan pembalikan halaman
             animatePageTurn(true);
+            
+            // Render halaman
+            renderPage(currentPage);
             
             // Update UI
             updateCurrentPage();
@@ -419,8 +586,6 @@
         
         // Fungsi untuk animasi membalik halaman
         function animatePageTurn(isNext) {
-            const book = document.getElementById('book');
-            
             // Tambahkan kelas animasi
             book.classList.add('turning');
             
@@ -446,12 +611,12 @@
         // Fungsi untuk memperbarui status tombol
         function updateButtons() {
             prevBtn.disabled = currentPage <= 1;
-            nextBtn.disabled = currentPage >= totalPages;
+            nextBtn.disabled = currentPage >= totalPages + 1; // +1 untuk halaman sampul
         }
         
         // Tambahkan navigasi dengan keyboard
         document.addEventListener('keydown', (e) => {
-            if (isTurning) return;
+            if (isTurning || !pdfDoc) return;
             
             if (e.key === 'ArrowLeft') {
                 goToPreviousPage();
@@ -474,7 +639,7 @@
         });
         
         function handleSwipe() {
-            if (isTurning) return;
+            if (isTurning || !pdfDoc) return;
             
             const swipeThreshold = 50;
             
@@ -486,6 +651,9 @@
                 goToPreviousPage();
             }
         }
+        
+        // Inisialisasi
+        updateButtons();
     </script>
 </body>
 </html>
